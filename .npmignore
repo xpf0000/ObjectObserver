@@ -1,0 +1,28 @@
+.DS_Store
+node_modules
+/tests/feature/coverage/*
+/docs
+.editorconfig
+.eslintrc.js
+.gitignore
+.npmignore
+
+# local env files
+.env.local
+.env.*.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.git
+.svn
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw*

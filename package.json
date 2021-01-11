@@ -1,0 +1,56 @@
+{
+  "name": "objectobserver",
+  "version": "1.0.0",
+  "author": "250881478@qq.com",
+  "main": "src/index.js",
+  "unpkg": "src/index.js",
+  "browser": "dist/objectObserver.js",
+  "private": false,
+  "description": "JS Object Observer, Build on the basis of ES6 proxy, use like vue's watch",
+  "scripts": {
+    "serve": "webpack-dev-server",
+    "build": "webpack ./src/index.js",
+    "lint": "webpack lint",
+    "test": "cross-env BABEL_ENV=test mocha-webpack --webpack-config=webpack.test.js tests/*.js"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.11.0",
+    "@babel/preset-env": "^7.11.0",
+    "babel-eslint": "^10.1.0",
+    "babel-loader": "^8.1.0",
+    "cross-env": "^5.2.1",
+    "eslint": "^7.6.0",
+    "eslint-loader": "^4.0.2",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12",
+    "webpack-dev-server": "^3.11.0",
+    "chai": "^4.2.0",
+    "mocha": "^6.2.3",
+    "mocha-webpack": "^2.0.0-beta.0"
+  },
+  "files": [
+    "/dist/*",
+    "/src/*"
+  ],
+  "engines": {
+    "node": ">= 4.0.0",
+    "npm": ">= 3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xpf0000/ObjectObserver.git"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/xpf0000/ObjectObserver/issues"
+  },
+  "homepage": "https://github.com/xpf0000/ObjectObserver",
+  "keywords": [
+    "ObjectObserver",
+    "Object watch",
+    "Object Observer",
+    "proxy",
+    "vue watch"
+  ],
+  "dependencies": {}
+}
