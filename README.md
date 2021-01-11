@@ -1,8 +1,8 @@
 <h1 align="center">ObjectObserver</h1>
 
-[![Latest Version on NPM](https://img.shields.io/npm/v/objectobserver.svg?style=flat-square)](https://npmjs.com/package/objectobserver)
+[![Latest Version on NPM](https://img.shields.io/npm/v/@xpf0000/objectobserver.svg?style=flat-square)](https://npmjs.com/package/@xpf0000/objectobserver)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
-[![npm](https://img.shields.io/npm/dt/objectobserver.svg?style=flat-square)](https://www.npmjs.com/package/objectobserver)
+[![npm](https://img.shields.io/npm/dt/@xpf0000/objectobserver.svg?style=flat-square)](https://www.npmjs.com/package/@xpf0000/objectobserver)
 
 > JS Object Observer, Build on the basis of ES6 proxy, use like vue's watch
 
@@ -17,11 +17,11 @@
 ## Install and basic usage
 
 ```bash
-$ npm install --save objectobserver
+$ npm install --save @xpf0000/objectobserver
 ```
 
 ```js
-import Watch from "objectobserver"
+import Watch from "@xpf0000/objectobserver"
 let obj = { a: 0, b: { b0: 1 } }
 obj = Watch(obj, {
       '*': {
