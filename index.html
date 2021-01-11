@@ -5,14 +5,32 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>Test</title>
-    <script type="module" src="./dist/domPoints.js"></script>
+    <script type="module" src="./dist/objectObserver.js"></script>
   </head>
   <body>
-  <div>
-    <script type="module">
-      let dist = DomPoints.pointsDistance({x: 0, y: 0}, {x: 20, y: 20})
-      console.log('dist: ', dist)
-    </script>
+  <div id="test">
   </div>
+  <script type="module">
+    console.log(ObjectObserver.default)
+    const Watch = ObjectObserver.default
+    let data = Watch({
+      a: 0
+    })
+    document.getElementById('test').innerText = data.a
+    Watch(data, {
+      a(newVal, oldVal) {
+        document.getElementById('test').innerText = newVal
+      }
+    })
+    setTimeout(() => {
+      data.a = 1
+    }, 500)
+    setTimeout(() => {
+      data.a = 2
+    }, 1000)
+    setTimeout(() => {
+      data.a = 3
+    }, 1500)
+  </script>
   </body>
 </html>
