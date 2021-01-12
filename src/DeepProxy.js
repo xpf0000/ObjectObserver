@@ -46,14 +46,43 @@ const uuid = function (length = 32) {
   }
   return str
 }
-export default function DeepProxy(obj, cb, path=[]) {
+export const deepClone = function (source) {
+  // 声明cache变量，便于匹配是否有循环引用的情况
+  let cache = []
+  let str = JSON.stringify(source, (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (cache.includes(value)) {
+        // 移除
+        return
+      }
+      // 收集所有的值
+      cache.push(value)
+    }
+    if (typeof value === 'function') {
+      return
+    }
+    return value
+  })
+  cache = null // 清空变量，便于垃圾回收机制回收
+  return JSON.parse(str)
+}
+const wm = new WeakMap()
+export default function DeepProxy(obj, cb, path=[], depth = 0, currentDepth = 1) {
+  if (!wm.has(obj)) {
+    wm.set(obj, obj)
+  }
   if (typeof obj === 'object') {
-    for (let key in obj) {
-      if (typeof obj[key] === 'object') {
+    for (let key of Object.keys(obj)) {
+      if (typeof obj[key] === 'object' &&
+        (depth === 0 || currentDepth < depth) &&
+        !wm.has(obj[key]) &&
+        Object.isExtensible(obj[key]) &&
+        !Object.isFrozen(obj[key]) &&
+        !Object.isSealed(obj[key])) {
         if (!obj[key][isProxy]) {
           let paths = JSON.parse(JSON.stringify(path))
           paths.push(key)
-          obj[key] = DeepProxy(obj[key], cb, paths)
+          obj[key] = DeepProxy(obj[key], cb, paths, depth, currentDepth + 1)
         }
       }
     }
@@ -79,14 +108,20 @@ export default function DeepProxy(obj, cb, path=[]) {
     obj[callBackProxy] = [...cb]
   }
   obj[pathProxy] = path
+  wm.set(obj, obj)
   return new Proxy(obj, {
     set: function (target, key, value, receiver) {
       if (key !== pathProxy && key !== callBackProxy && key !== isProxy) {
         let cbs = filterFn(obj[callBackProxy])
         let paths = JSON.parse(JSON.stringify(obj[pathProxy]))
         paths.push(key)
-        if (typeof value === 'object') {
-          value = DeepProxy(value, cbs, paths)
+        if (typeof value === 'object' &&
+          (depth === 0 || currentDepth < depth) &&
+          !wm.has(value) &&
+          Object.isExtensible(value) &&
+          !Object.isFrozen(value) &&
+          !Object.isSealed(value)) {
+          value = DeepProxy(value, cbs, paths, depth, currentDepth + 1)
         }
         if (!isEqual(target[key], value)) {
           let uid = uuid(8)

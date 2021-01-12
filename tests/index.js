@@ -166,6 +166,77 @@ function test6 (info) {
   })
 }
 
+function test7 (info) {
+  it(info, function (done) {
+    let obj = Watch({ a: { b : 0 } }, {
+      '*': function (newVal, oldVal) {
+        console.log('test7 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
+        expect(oldVal).to.deep.equal({ a: { b: 1 } })
+        expect(newVal).to.deep.equal({ a: { b: 1 }, c: 0 })
+      }
+    }, 1)
+    obj.a.b = 1
+    obj.c = 0
+    done()
+  })
+}
+
+function test8 (info) {
+  it(info, function (done) {
+    let obj = Watch({ a: { b : 0, c: { d: 0 } } }, {
+      '*': function (newVal, oldVal) {
+        console.log('test8 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
+        expect(oldVal).to.deep.equal({ a: { b : 0, c: { d: 1 } } })
+        expect(newVal).to.deep.equal({ a: { b : 1, c: { d: 1 } } })
+      }
+    }, 2)
+    obj.a.c.d = 1
+    obj.a.b = 1
+    done()
+  })
+}
+
+function test9 (info) {
+  it(info, function (done) {
+    let obj = Watch({ a: { b : 0, c: { d: 0 } } }, {
+      '*': {
+        handler() {
+          console.log('test9 watch *, obj current is: ', JSON.parse(JSON.stringify(obj)))
+        },
+        silence: true
+      }
+    })
+    obj.a.c.d = 1
+    obj.a.b = 1
+    done()
+  })
+}
+
+function test10 (info) {
+  it(info, function (done) {
+    let obj = {
+      a: {
+        b: 0,
+        f: 0
+      }
+    }
+    obj.a.b = obj
+    obj.c = obj.a
+    obj.a.d = obj.a
+    console.log('test10 original obj: ', obj)
+
+    obj = Watch(obj, {
+      '*': {
+        handler(newVal, oldVal) {
+          console.log('test10 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
+        },
+      }
+    })
+    obj.a.b = 1
+    done()
+  })
+}
+
 describe('TEST', function () {
   test1('{ a: 0 } => { a: 1 }, watch *, a')
   test2('{ a: { b: 0 } } => { a: { b: 1 } }, watch *, a deep, a.b')
@@ -173,4 +244,8 @@ describe('TEST', function () {
   test4('[0, 1, 2] => [0, 1, 2, 3], watch *')
   test5('{ a: 0 } => { a: 2 }, two watch *')
   test6('[] => [0, 1, 2], three watch *')
+  test7('{ a: { b : 0 } } => { a: { b: 1 }, c: 0 }, watch * with deep 1')
+  test8('{ a: { b : 0, c: { d: 0 } } } => { a: { b : 1, c: { d: 1 } } }, watch * with deep 2')
+  test9('{ a: { b : 0, c: { d: 0 } } } => { a: { b : 1, c: { d: 1 } } }, watch * with silence')
+  test10('Test loop reference, watch *')
 })

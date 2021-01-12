@@ -5,6 +5,10 @@
 [![npm](https://img.shields.io/npm/dt/@xpf0000/objectobserver.svg?style=flat-square)](https://www.npmjs.com/package/@xpf0000/objectobserver)
 
 > JS Object Observer, Build on the basis of ES6 proxy, use like vue's watch
+>
+>Support circular reference
+>
+>Can set watch depth and silence watch
 
 
 ## Table of Contents
@@ -32,7 +36,7 @@ obj = Watch(obj, {
         handler(newVal, oldVal) {},
         deep: true
        },
-        'b.b0': function(newVal, oldVal) {}
+       'b.b0': function(newVal, oldVal) {}
     })
 obj.a = 1
 obj.c = 0
@@ -52,6 +56,43 @@ let arr2 = Watch(arr, {
 arr.push(0)
 arr1.push(1)
 arr2.push(2)
+```
+
+### options
+
+#### deep
+
+set watch depth, default whole object
+
+```js
+let obj = { a: 0, b: { b0: 1 } }
+obj = Watch(obj, {
+      '*': {
+        handler(newVal, oldVal) {}
+      },
+    }, 1)
+obj.b.b0 = 2 //won't trigger
+obj.a = 1 // trigger
+obj.c = 0 // trigger
+```
+
+#### silence
+
+Accurate new and old values are no longer returned, only get changed notice
+
+```js
+let obj = { a: 0, b: { b0: 1 } }
+obj = Watch(obj, {
+      '*': {
+        handler(newVal, oldVal) {
+        // newVal: undefined oldVal: undefined
+            console.log(obj)
+            console.log(obj.c)
+        },
+        silence: true
+      },
+    })
+obj.c = 0 // trigger
 ```
 
 ## Contributing
