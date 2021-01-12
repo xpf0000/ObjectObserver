@@ -80,14 +80,6 @@ export default function DeepProxy(obj, cb, path=[]) {
   }
   obj[pathProxy] = path
   return new Proxy(obj, {
-    get(target, p, receiver) {
-      if (target.hasOwnProperty(p)) {
-        for (let fn of filterFn(obj[callBackProxy])) {
-          fn && fn('get', ...arguments)
-        }
-      }
-      return Reflect.get(...arguments)
-    },
     set: function (target, key, value, receiver) {
       if (key !== pathProxy && key !== callBackProxy && key !== isProxy) {
         let cbs = filterFn(obj[callBackProxy])
