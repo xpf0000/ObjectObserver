@@ -25,37 +25,44 @@ $ npm install --save @xpf0000/objectobserver
 ```
 
 ```js
-import Watch from "@xpf0000/objectobserver"
+import Watch, { watch, unWatch } from "@xpf0000/objectobserver"
 let obj = { a: 0, b: { b0: 1 } }
-obj = Watch(obj, {
-      '*': {
+obj = Watch(obj)
+let config = {
+    '*': {
         handler(newVal, oldVal) {}
-      },
-      a: function (newVal, oldVal) {},
-      b: {
+     },
+     a: function (newVal, oldVal) {},
+     b: {
         handler(newVal, oldVal) {},
         deep: true
-       },
-       'b.b0': function(newVal, oldVal) {}
-    })
+     },
+     'b.b0': function(newVal, oldVal) {}
+}
+obj[watch](config)
 obj.a = 1
 obj.c = 0
 obj.b.b0 = 2
 
 let arr = Watch([])
-let arr1 = Watch(arr, {
+let arr1 = Watch(arr)
+let arr2 = Watch(arr)
+let config1 = {
     '*': {
         handler(newVal, oldVal) {}
-      },
-    })
-let arr2 = Watch(arr, {
+    },
+}
+let config2 = {
     '*': {
         handler(newVal, oldVal) {}
-      },
-    })
+    },
+}
+arr1[watch](config1)
+arr2[watch](config2)
 arr.push(0)
 arr1.push(1)
 arr2.push(2)
+arr2[unWatch](config2)
 ```
 
 ### Watch options
@@ -65,12 +72,15 @@ arr2.push(2)
 set watch depth, default whole object
 
 ```js
+import Watch, { watch, unWatch } from "@xpf0000/objectobserver"
 let obj = { a: 0, b: { b0: 1 } }
-obj = Watch(obj, {
-      '*': {
+obj = Watch(obj, 1)
+let config = {
+    '*': {
         handler(newVal, oldVal) {}
-      },
-    }, depth: 1)
+    },
+}
+obj[watch](config)
 obj.b.b0 = 2 //won't trigger
 obj.a = 1 // trigger
 obj.c = 0 // trigger
@@ -83,13 +93,16 @@ obj.c = 0 // trigger
 Only observe this level or observe this level and subordinate level
 
 ```js
+import Watch, { watch, unWatch } from "@xpf0000/objectobserver"
 let obj = { a: 0, b: { b0: 1 } }
-obj = Watch(obj, {
-      'b': {
+obj = Watch(obj)
+let config = {
+    'b': {
         handler(newVal, oldVal) {},
         deep: false
-      },
-    })
+    },
+}
+obj[watch](config)
 obj.b = { c: 0 } // trigger
 obj.b.c = 1 //won't trigger if deep is false
 ```
@@ -99,18 +112,46 @@ obj.b.c = 1 //won't trigger if deep is false
 Accurate new and old values are no longer returned, only get changed notice
 
 ```js
+import Watch, { watch, unWatch } from "@xpf0000/objectobserver"
 let obj = { a: 0, b: { b0: 1 } }
-obj = Watch(obj, {
-      '*': {
+obj = Watch(obj)
+let config = {
+    '*': {
         handler(newVal, oldVal) {
         // newVal: undefined oldVal: undefined
-            console.log(obj)
-            console.log(obj.c)
+        console.log(obj)
+        console.log(obj.c)
         },
         silence: true
-      },
-    })
+    },
+}
+obj[watch](config)
 obj.c = 0 // trigger
+```
+
+### Methods
+
+#### watch
+
+watch is a Symbol, so no need to worry about the conflict between the original data and the watch method
+
+```js
+import Watch, { watch, unWatch } from "@xpf0000/objectobserver"
+let obj = { a: 0, b: { b0: 1 } }
+obj = Watch(obj)
+obj[watch]({...})
+```
+
+#### unWatch
+
+unWatch is a Symbol, so no need to worry about the conflict between the original data and the unWatch method
+
+```js
+import Watch, { watch, unWatch } from "@xpf0000/objectobserver"
+let obj = { a: 0, b: { b0: 1 } }
+obj = Watch(obj)
+obj[unWatch]({...}) // only clean this watcher
+obj[unWatch]() // clean all watcher
 ```
 
 ## Contributing
