@@ -58,9 +58,9 @@ arr1.push(1)
 arr2.push(2)
 ```
 
-### options
+### Watch options
 
-#### deep
+#### depth
 
 set watch depth, default whole object
 
@@ -70,10 +70,28 @@ obj = Watch(obj, {
       '*': {
         handler(newVal, oldVal) {}
       },
-    }, 1)
+    }, depth: 1)
 obj.b.b0 = 2 //won't trigger
 obj.a = 1 // trigger
 obj.c = 0 // trigger
+```
+
+### Watch item options
+
+#### deep
+
+Only observe this level or observe this level and subordinate level
+
+```js
+let obj = { a: 0, b: { b0: 1 } }
+obj = Watch(obj, {
+      'b': {
+        handler(newVal, oldVal) {},
+        deep: false
+      },
+    })
+obj.b = { c: 0 } // trigger
+obj.b.c = 1 //won't trigger if deep is false
 ```
 
 #### silence
