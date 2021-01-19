@@ -4,22 +4,13 @@ export const watchConfigsSymbol = Symbol('watchConfigsSymbol')
 export const watch = Symbol('watchFnSymbol')
 export const unWatch = Symbol('unWatchFnSymbol')
 export const watchSymbol = Symbol('watchSymbol')
-const pathProxy = Symbol('pathProxy')
-const filterFn = function (arr) {
-  if (!arr) {
-    return []
-  }
-  return arr.filter(fn => {
-    return fn && typeof fn === "function"
-  })
-}
 const isArray = function (obj) {
   return toString.call(obj) === '[object Array]'
 }
 const isObject = function (obj) {
   return obj !== null && toString.call(obj) === '[object Object]'
 }
-const isEqual = function (a, b) {
+export const isEqual = function (a, b) {
   if (a === b) {
     return true;
   }
@@ -54,6 +45,12 @@ const uuid = function (length = 32) {
   return str
 }
 export const deepClone = function (source) {
+  if (typeof source === 'function') {
+    return null
+  }
+  if (typeof source !== 'object') {
+    return source
+  }
   // 声明cache变量，便于匹配是否有循环引用的情况
   let cache = []
   let str = JSON.stringify(source, (key, value) => {
@@ -74,11 +71,11 @@ export const deepClone = function (source) {
   return JSON.parse(str)
 }
 const wm = new WeakMap()
-export default function DeepProxy(obj, path=[], depth = 0, currentDepth = 1) {
+export default function DeepProxy(obj=[], depth = 0, currentDepth = 1) {
   if (!wm.has(obj)) {
     wm.set(obj, obj)
   }
-  if (path.length === 0) {
+  if (currentDepth === 1) {
     if (!obj[callBackProxy]) {
       obj[callBackProxy] = []
     }
@@ -91,10 +88,8 @@ export default function DeepProxy(obj, path=[], depth = 0, currentDepth = 1) {
       !Object.isFrozen(obj[key]) &&
       !Object.isSealed(obj[key])) {
       if (!obj[key][isProxy]) {
-        let paths = JSON.parse(JSON.stringify(path))
-        paths.push(key)
         obj[key][callBackProxy] = obj[callBackProxy]
-        obj[key] = DeepProxy(obj[key], paths, depth, currentDepth + 1)
+        obj[key] = DeepProxy(obj[key], depth, currentDepth + 1)
       }
     }
   }
@@ -102,18 +97,14 @@ export default function DeepProxy(obj, path=[], depth = 0, currentDepth = 1) {
     return obj
   }
   obj[isProxy] = true
-  obj[pathProxy] = path
   return new Proxy(obj, {
     defineProperty(target, key, attributes) {
-      if (key !== pathProxy &&
-        key !== callBackProxy &&
+      if (key !== callBackProxy &&
         key !== watch &&
         key !== unWatch &&
         key !== isProxy &&
         key !== watchSymbol &&
         key !== watchConfigsSymbol) {
-        let paths = JSON.parse(JSON.stringify(obj[pathProxy]))
-        paths.push(key)
         if (typeof attributes.value === 'object' &&
           (depth === 0 || currentDepth < depth) &&
           !wm.has(attributes.value) &&
@@ -122,17 +113,16 @@ export default function DeepProxy(obj, path=[], depth = 0, currentDepth = 1) {
           !Object.isFrozen(attributes.value) &&
           !Object.isSealed(attributes.value)) {
           attributes.value[callBackProxy] = obj[callBackProxy]
-          attributes.value = DeepProxy(attributes.value, paths, depth, currentDepth + 1)
+          attributes.value = DeepProxy(attributes.value, depth, currentDepth + 1)
         }
         if (!isEqual(target[key], attributes.value)) {
-          let cbs = filterFn(obj[callBackProxy])
           let uid = uuid(8)
-          for (let fn of cbs) {
-            fn && fn('before-set', paths, uid)
+          for (let fn of obj[callBackProxy]) {
+            fn && fn('before-set', uid)
           }
           Reflect.defineProperty(...arguments)
-          for (let fn of cbs) {
-            fn && fn('after-set', paths, uid)
+          for (let fn of obj[callBackProxy]) {
+            fn && fn('after-set', uid)
           }
           return true
         }
@@ -140,15 +130,12 @@ export default function DeepProxy(obj, path=[], depth = 0, currentDepth = 1) {
       return Reflect.defineProperty(...arguments)
     },
     set: function (target, key, value, receiver) {
-      if (key !== pathProxy &&
-        key !== callBackProxy &&
+      if (key !== callBackProxy &&
         key !== watch &&
         key !== unWatch &&
         key !== isProxy &&
         key !== watchSymbol &&
         key !== watchConfigsSymbol) {
-        let paths = JSON.parse(JSON.stringify(obj[pathProxy]))
-        paths.push(key)
         if (typeof value === 'object' &&
           (depth === 0 || currentDepth < depth) &&
           !wm.has(value) &&
@@ -156,29 +143,25 @@ export default function DeepProxy(obj, path=[], depth = 0, currentDepth = 1) {
           !Object.isFrozen(value) &&
           !Object.isSealed(value)) {
           value[callBackProxy] = obj[callBackProxy]
-          value = DeepProxy(value, paths, depth, currentDepth + 1)
+          value = DeepProxy(value, depth, currentDepth + 1)
         }
       }
       return Reflect.set(target, key, value, receiver)
     },
     deleteProperty(target, key) {
-      if (key !== pathProxy &&
-        key !== callBackProxy &&
+      if (key !== callBackProxy &&
         key !== watch &&
         key !== unWatch &&
         key !== isProxy &&
         key !== watchSymbol &&
         key !== watchConfigsSymbol) {
-        let cbs = filterFn(obj[callBackProxy])
-        let paths = JSON.parse(JSON.stringify(obj[pathProxy]))
-        paths.push(key)
         let uid = uuid(8)
-        for (let fn of cbs) {
-          fn && fn('before-delete', paths, uid)
+        for (let fn of obj[callBackProxy]) {
+          fn && fn('before-delete', uid)
         }
         Reflect.deleteProperty(...arguments)
-        for (let fn of cbs) {
-          fn && fn('after-delete', paths, uid)
+        for (let fn of obj[callBackProxy]) {
+          fn && fn('after-delete', uid)
         }
         return true
       }

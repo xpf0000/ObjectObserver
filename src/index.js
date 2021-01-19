@@ -1,11 +1,8 @@
 import DeepProxy, { callBackProxy, deepClone, watchConfigsSymbol, watch, unWatch, watchSymbol } from "./DeepProxy.js"
+import {isEqual} from "./DeepProxy.js";
 export { watch, unWatch }
 export default function Watch(object, depth = 0) {
-  let obj = DeepProxy(
-    object,
-    [],
-    depth
-  )
+  let obj = DeepProxy(object, depth)
   if (!obj.hasOwnProperty(watch)) {
     Object.defineProperty(obj, watch, {
       enumerable: false,
@@ -17,114 +14,89 @@ export default function Watch(object, depth = 0) {
         }
         if (!obj[watchConfigsSymbol].has(watch)) {
           watch[watchSymbol] = {}
+          let oldValue
+          let befor = false
+          let after = false
           let cb = function () {
             let flag = arguments[0]
-            let oldSelf = undefined
-            let newSelf = undefined
-            let uid = ''
-            switch (flag) {
-              case 'before-delete':
-              case 'before-set':
-                let paths = arguments[1]
-                uid = arguments[2]
-                watch[watchSymbol][uid] = {}
-                let pathsStr = paths.join('.')
-                for (let k in watch) {
-                  if (watch[k].silence) {
-                    watch[watchSymbol][uid][k] = {
-                      old: undefined,
-                    }
-                    continue
-                  }
-                  if (k === '*') {
-                    if (!oldSelf) {
-                      oldSelf = deepClone(object)
-                    }
-                    watch[watchSymbol][uid][k] = {
-                      old: oldSelf,
-                    }
-                  } else if (k === pathsStr) {
-                    if (
-                      paths.length > 0 &&
-                      !watch[watchSymbol][uid].hasOwnProperty(k)
-                    ) {
-                      if (!oldSelf) {
-                        oldSelf = deepClone(object)
-                      }
-                      let data = oldSelf
-                      for (let p of paths) {
-                        data = data[p]
-                      }
-                      watch[watchSymbol][uid][k] = {
-                        old: data,
-                        paths: paths,
-                      }
-                    }
-                  } else if (watch[k].deep) {
-                    if (
-                      paths.length > 0 &&
-                      !watch[watchSymbol][uid].hasOwnProperty(k)
-                    ) {
-                      let same = false
-                      let path = []
-                      for (let p of paths) {
-                        path.push(p)
-                        if (path.join('.') === k) {
-                          same = true
-                          break
+            let uid = arguments[2]
+            if (!befor || !after) {
+              if (flag.indexOf('before') >= 0) {
+                oldValue = deepClone(obj)
+                befor = true
+              }
+              if (flag.indexOf('after') >= 0) {
+                after = true
+              }
+              Promise.resolve().then(() => {
+                switch (flag) {
+                  case 'before-delete':
+                  case 'before-set':
+                    watch[watchSymbol][uid] = {}
+                    for (let k in watch) {
+                      if (watch[k].silence) {
+                        watch[watchSymbol][uid][k] = {
+                          old: undefined,
                         }
+                        continue
                       }
-                      if (same) {
-                        let data = oldSelf
-                        for (let p of path) {
+                      if (k === '*') {
+                        watch[watchSymbol][uid][k] = {
+                          old: oldValue,
+                        }
+                      } else {
+                        let paths = k.split('.')
+                        let data = oldValue
+                        for (let p of paths) {
+                          if (typeof data != 'object') {
+                            data = undefined
+                            break
+                          }
                           data = data[p]
                         }
                         watch[watchSymbol][uid][k] = {
-                          old: data,
-                          paths: path,
+                          old: data
                         }
                       }
                     }
-                  }
-                }
-                break
-              case 'after-delete':
-              case 'after-set':
-                uid = arguments[2]
-                if (Object.keys(watch[watchSymbol][uid]).length > 0) {
-                  for (let k in watch[watchSymbol][uid]) {
-                    if (watch[k].silence) {
-                      watch[watchSymbol][uid][k].current = undefined
-                    } else {
-                      if (!newSelf) {
-                        newSelf = deepClone(object)
-                      }
-                      if (watch[watchSymbol][uid][k].paths) {
-                        let data = newSelf
-                        for (let p of watch[watchSymbol][uid][k].paths) {
-                          data = data[p]
+                    break
+                  case 'after-delete':
+                  case 'after-set':
+                    let newValue = deepClone(obj)
+                    if (Object.keys(watch[watchSymbol][uid]).length > 0) {
+                      for (let k in watch[watchSymbol][uid]) {
+                        let current
+                        if (watch[k].silence) {
+                          current = undefined
+                        } else {
+                          if (k === '*') {
+                            current = newValue
+                          } else {
+                            let paths = k.split('.')
+                            let data = newValue
+                            for (let p of paths) {
+                              if (typeof data != 'object') {
+                                data = undefined
+                                break
+                              }
+                              data = data[p]
+                            }
+                            current = data
+                          }
                         }
-                        watch[watchSymbol][uid][k].current = data
-                      } else {
-                        watch[watchSymbol][uid][k].current = newSelf
+                        let old = watch[watchSymbol][uid][k].old
+                        if (k === '*' || !isEqual(current, old)) {
+                          let fun = typeof watch[k] === 'function' ? watch[k] : watch[k].handler
+                          fun && fun(current, old)
+                        }
                       }
                     }
-                    if (typeof watch[k] === 'function') {
-                      watch[k](
-                        watch[watchSymbol][uid][k].current,
-                        watch[watchSymbol][uid][k].old
-                      )
-                    } else {
-                      watch[k].handler &&
-                      watch[k].handler(
-                        watch[watchSymbol][uid][k].current,
-                        watch[watchSymbol][uid][k].old
-                      )
-                    }
-                  }
+                    delete watch[watchSymbol][uid]
+                    befor = after = false
+                    oldValue = null
+                    break
                 }
-                delete watch[watchSymbol][uid]
-                break
+              })
             }
           }
           obj[watchConfigsSymbol].set(watch, cb)
