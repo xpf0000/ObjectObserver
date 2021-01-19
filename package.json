@@ -1,6 +1,6 @@
 {
   "name": "@xpf0000/objectobserver",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "author": "250881478@qq.com",
   "main": "src/index.js",
   "unpkg": "src/index.js",
@@ -13,7 +13,6 @@
     "lint": "webpack lint",
     "test": "cross-env BABEL_ENV=test mocha-webpack --webpack-config=webpack.test.js tests/*.js"
   },
-  "type": "module",
   "devDependencies": {
     "@babel/core": "^7.11.0",
     "@babel/preset-env": "^7.11.0",
