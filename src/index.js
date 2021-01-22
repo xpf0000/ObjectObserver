@@ -15,38 +15,55 @@ export default function Watch(object, depth = 0) {
         if (!obj[watchConfigsSymbol].has(watch)) {
           watch[watchSymbol] = {}
           let oldValue
-          let befor = false
-          let after = false
           let cb = function () {
             let flag = arguments[0]
-            let uid = arguments[2]
-            if (!befor || !after) {
-              if (flag.indexOf('before') >= 0) {
+            let uid = arguments[1]
+            switch (flag) {
+              case 'before-delete':
+              case 'before-set':
                 oldValue = deepClone(obj)
-                befor = true
-              }
-              if (flag.indexOf('after') >= 0) {
-                after = true
-              }
-              Promise.resolve().then(() => {
-                switch (flag) {
-                  case 'before-delete':
-                  case 'before-set':
-                    watch[watchSymbol][uid] = {}
-                    for (let k in watch) {
-                      if (watch[k].silence) {
-                        watch[watchSymbol][uid][k] = {
-                          old: undefined,
-                        }
-                        continue
+                watch[watchSymbol][uid] = {}
+                for (let k in watch) {
+                  if (watch[k].silence) {
+                    watch[watchSymbol][uid][k] = {
+                      old: undefined,
+                    }
+                    continue
+                  }
+                  if (k === '*') {
+                    watch[watchSymbol][uid][k] = {
+                      old: oldValue,
+                    }
+                  } else {
+                    let paths = k.split('.')
+                    let data = oldValue
+                    for (let p of paths) {
+                      if (typeof data != 'object') {
+                        data = undefined
+                        break
                       }
+                      data = data[p]
+                    }
+                    watch[watchSymbol][uid][k] = {
+                      old: data
+                    }
+                  }
+                }
+                break
+              case 'after-delete':
+              case 'after-set':
+                let newValue = deepClone(obj)
+                if (Object.keys(watch[watchSymbol][uid]).length > 0) {
+                  for (let k in watch[watchSymbol][uid]) {
+                    let current
+                    if (watch[k].silence) {
+                      current = undefined
+                    } else {
                       if (k === '*') {
-                        watch[watchSymbol][uid][k] = {
-                          old: oldValue,
-                        }
+                        current = newValue
                       } else {
                         let paths = k.split('.')
-                        let data = oldValue
+                        let data = newValue
                         for (let p of paths) {
                           if (typeof data != 'object') {
                             data = undefined
@@ -54,49 +71,19 @@ export default function Watch(object, depth = 0) {
                           }
                           data = data[p]
                         }
-                        watch[watchSymbol][uid][k] = {
-                          old: data
-                        }
+                        current = data
                       }
                     }
-                    break
-                  case 'after-delete':
-                  case 'after-set':
-                    let newValue = deepClone(obj)
-                    if (Object.keys(watch[watchSymbol][uid]).length > 0) {
-                      for (let k in watch[watchSymbol][uid]) {
-                        let current
-                        if (watch[k].silence) {
-                          current = undefined
-                        } else {
-                          if (k === '*') {
-                            current = newValue
-                          } else {
-                            let paths = k.split('.')
-                            let data = newValue
-                            for (let p of paths) {
-                              if (typeof data != 'object') {
-                                data = undefined
-                                break
-                              }
-                              data = data[p]
-                            }
-                            current = data
-                          }
-                        }
-                        let old = watch[watchSymbol][uid][k].old
-                        if (k === '*' || !isEqual(current, old)) {
-                          let fun = typeof watch[k] === 'function' ? watch[k] : watch[k].handler
-                          fun && fun(current, old)
-                        }
-                      }
+                    let old = watch[watchSymbol][uid][k].old
+                    if (k === '*' || !isEqual(current, old)) {
+                      let fun = typeof watch[k] === 'function' ? watch[k] : watch[k].handler
+                      fun && fun(current, old)
                     }
-                    delete watch[watchSymbol][uid]
-                    befor = after = false
-                    oldValue = null
-                    break
+                  }
                 }
-              })
+                delete watch[watchSymbol][uid]
+                oldValue = null
+                break
             }
           }
           obj[watchConfigsSymbol].set(watch, cb)
