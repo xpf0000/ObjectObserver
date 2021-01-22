@@ -43,31 +43,17 @@ const uuid = function (length = 32) {
   }
   return str
 }
-export const deepClone = function (source) {
-  if (typeof source === 'function') {
-    return null
-  }
-  if (typeof source !== 'object' || source === null) {
-    return source
-  }
-  // 声明cache变量，便于匹配是否有循环引用的情况
-  let cache = new WeakSet()
-  let str = JSON.stringify(source, (key, value) => {
-    if (typeof value === 'object' && value !== null) {
-      if (cache.has(value)) {
-        // 移除
-        return
-      }
-      // 收集所有的值
-      cache.add(value)
+export const deepClone =(source, hash = new WeakMap())=>{
+  if(typeof source !== 'object') return source
+  if(hash.has(source)) return hash.get(source)
+  const target = Array.isArray(source) ? [] : {}
+  hash.set(source, target)
+  for(let key in source){
+    if(Object.prototype.hasOwnProperty.call(source, key)){
+      target[key] = deepClone(source[key], hash)
     }
-    if (typeof value === 'function') {
-      return
-    }
-    return value
-  })
-  cache = null // 清空变量，便于垃圾回收机制回收
-  return JSON.parse(str)
+  }
+  return target
 }
 const running = new WeakSet()
 function toProxy(obj, depth, currentDepth) {
