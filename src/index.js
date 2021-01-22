@@ -1,5 +1,12 @@
-import DeepProxy, { callBackProxy, deepClone, watchConfigsSymbol, watch, unWatch, watchSymbol } from "./DeepProxy.js"
-import {isEqual} from "./DeepProxy.js";
+import DeepProxy, {
+  callBackProxy,
+  deepClone,
+  watchConfigsSymbol,
+  watch,
+  unWatch,
+  watchSymbol,
+} from './DeepProxy.js'
+import { isEqual } from './DeepProxy.js'
 export { watch, unWatch }
 export default function Watch(object, depth = 0) {
   let obj = DeepProxy(object, depth)
@@ -21,7 +28,7 @@ export default function Watch(object, depth = 0) {
             switch (flag) {
               case 'before-delete':
               case 'before-set':
-                oldValue = deepClone(obj)
+                oldValue = deepClone(obj, depth)
                 watch[watchSymbol][uid] = {}
                 for (let k in watch) {
                   if (watch[k].silence) {
@@ -45,14 +52,14 @@ export default function Watch(object, depth = 0) {
                       data = data[p]
                     }
                     watch[watchSymbol][uid][k] = {
-                      old: data
+                      old: data,
                     }
                   }
                 }
                 break
               case 'after-delete':
               case 'after-set':
-                let newValue = deepClone(obj)
+                let newValue = deepClone(obj, depth)
                 if (Object.keys(watch[watchSymbol][uid]).length > 0) {
                   for (let k in watch[watchSymbol][uid]) {
                     let current
@@ -76,7 +83,10 @@ export default function Watch(object, depth = 0) {
                     }
                     let old = watch[watchSymbol][uid][k].old
                     if (k === '*' || !isEqual(current, old)) {
-                      let fun = typeof watch[k] === 'function' ? watch[k] : watch[k].handler
+                      let fun =
+                        typeof watch[k] === 'function'
+                          ? watch[k]
+                          : watch[k].handler
                       fun && fun(current, old)
                     }
                   }
@@ -91,7 +101,7 @@ export default function Watch(object, depth = 0) {
             obj[callBackProxy].push(cb)
           }
         }
-      }
+      },
     })
     Object.defineProperty(obj, unWatch, {
       enumerable: false,
@@ -110,7 +120,7 @@ export default function Watch(object, depth = 0) {
           }
           obj[watchConfigsSymbol].delete(config)
         }
-      }
+      },
     })
   }
   return obj

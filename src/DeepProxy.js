@@ -11,7 +11,7 @@ const isObject = function (obj) {
 }
 export const isEqual = function (a, b) {
   if (a === b) {
-    return true;
+    return true
   }
   if (isArray(a) && isArray(b)) {
     //Arrays comparison
@@ -25,15 +25,15 @@ export const isEqual = function (a, b) {
   } else if (isObject(a) && isObject(b)) {
     //Objects comparison
     let keysA = Object.keys(a),
-      len = keysA.length;
+      len = keysA.length
     if (len !== Object.keys(b).length) {
-      return false;
+      return false
     }
     return keysA.every((k) => {
       return b.hasOwnProperty(k) && isEqual(a[k], b[k])
     })
   }
-  return false;
+  return false
 }
 const uuid = function (length = 32) {
   const num = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
@@ -43,14 +43,22 @@ const uuid = function (length = 32) {
   }
   return str
 }
-export const deepClone =(source, hash = new WeakMap())=>{
-  if(typeof source !== 'object') return source
-  if(hash.has(source)) return hash.get(source)
+export const deepClone = (
+  source,
+  depth = 0,
+  currentDepth = 1,
+  hash = new WeakMap()
+) => {
+  if (depth > 0 && currentDepth > depth) {
+    return Array.isArray(source) ? [] : {}
+  }
+  if (typeof source !== 'object' || source === null) return source
+  if (hash.has(source)) return hash.get(source)
   const target = Array.isArray(source) ? [] : {}
   hash.set(source, target)
-  for(let key in source){
-    if(Object.prototype.hasOwnProperty.call(source, key)){
-      target[key] = deepClone(source[key], hash)
+  for (let key in source) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      target[key] = deepClone(source[key], depth, currentDepth + 1, hash)
     }
   }
   return target
@@ -59,14 +67,18 @@ const running = new WeakSet()
 function toProxy(obj, depth, currentDepth) {
   return new Proxy(obj, {
     defineProperty(target, key, attributes) {
-      if (key !== callBackProxy &&
+      if (
+        key !== callBackProxy &&
         key !== watch &&
         key !== unWatch &&
         key !== watchSymbol &&
-        key !== watchConfigsSymbol) {
-        if (typeof attributes.value === 'object' &&
+        key !== watchConfigsSymbol
+      ) {
+        if (
+          typeof attributes.value === 'object' &&
           (depth === 0 || currentDepth < depth) &&
-          Object.isExtensible(attributes.value)) {
+          Object.isExtensible(attributes.value)
+        ) {
           attributes.value[callBackProxy] = obj[callBackProxy]
           attributes.value = toProxy(attributes.value, depth, currentDepth + 1)
           DeepProxy(attributes.value, depth, currentDepth + 1)
@@ -92,14 +104,18 @@ function toProxy(obj, depth, currentDepth) {
       return Reflect.defineProperty(...arguments)
     },
     set: function (target, key, value, receiver) {
-      if (key !== callBackProxy &&
+      if (
+        key !== callBackProxy &&
         key !== watch &&
         key !== unWatch &&
         key !== watchSymbol &&
-        key !== watchConfigsSymbol) {
-        if (typeof value === 'object' &&
+        key !== watchConfigsSymbol
+      ) {
+        if (
+          typeof value === 'object' &&
           (depth === 0 || currentDepth < depth) &&
-          Object.isExtensible(value)) {
+          Object.isExtensible(value)
+        ) {
           value[callBackProxy] = obj[callBackProxy]
           value = toProxy(value, depth, currentDepth + 1)
           DeepProxy(value, depth, currentDepth + 1)
@@ -108,11 +124,13 @@ function toProxy(obj, depth, currentDepth) {
       return Reflect.set(target, key, value, receiver)
     },
     deleteProperty(target, key) {
-      if (key !== callBackProxy &&
+      if (
+        key !== callBackProxy &&
         key !== watch &&
         key !== unWatch &&
         key !== watchSymbol &&
-        key !== watchConfigsSymbol) {
+        key !== watchConfigsSymbol
+      ) {
         if (!running.has(obj[callBackProxy])) {
           running.add(obj[callBackProxy])
           let uid = uuid(8)
@@ -134,7 +152,7 @@ function toProxy(obj, depth, currentDepth) {
   })
 }
 
-export default function DeepProxy(obj=[], depth = 0, currentDepth = 1) {
+export default function DeepProxy(obj = [], depth = 0, currentDepth = 1) {
   if (obj[callBackProxy]) {
     return obj
   }
@@ -144,9 +162,11 @@ export default function DeepProxy(obj=[], depth = 0, currentDepth = 1) {
     }
   }
   for (let key of Object.keys(obj)) {
-    if (typeof obj[key] === 'object' &&
+    if (
+      typeof obj[key] === 'object' &&
       (depth === 0 || currentDepth < depth) &&
-      Object.isExtensible(obj[key])) {
+      Object.isExtensible(obj[key])
+    ) {
       if (!obj[key][callBackProxy]) {
         obj[key][callBackProxy] = obj[callBackProxy]
         obj[key] = toProxy(obj[key], depth, currentDepth + 1)
