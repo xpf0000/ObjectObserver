@@ -12,7 +12,7 @@ export function Watcher(object, depth = 0) {
   return DeepProxy(object, depth)
 }
 
-export function watch(obj, config) {
+export function watch(obj, config, env) {
   if (!obj.hasOwnProperty(callBackProxy)) {
     obj = Watcher(obj)
   }
@@ -81,7 +81,7 @@ export function watch(obj, config) {
                   typeof config[k] === 'function'
                     ? config[k]
                     : config[k].handler
-                fun && fun(current, old)
+                fun && fun.call(env, current, old)
               }
             }
           }

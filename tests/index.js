@@ -304,6 +304,7 @@ function test12 (info) {
       '*': {
         handler(newVal, oldVal) {
           console.log('test12-watch2 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
+          done()
         },
       }
     }
@@ -314,7 +315,6 @@ function test12 (info) {
       unWatch(obj, config)
       obj.a.b = 2
       console.log('test12 finial: ', JSON.parse(JSON.stringify(obj)))
-      done()
     }, 300)
   })
 }
@@ -383,10 +383,10 @@ function test14 (info) {
         console.log('test14-watch obj.a.b watch *, newVal: ', newVal, ', oldVal: ', oldVal)
         expect(oldVal).to.deep.equal({})
         expect(newVal).to.deep.equal({ b0: 0 })
+        done()
       }
     })
     obj.a.b.b0 = 0
-    done()
   })
 }
 
@@ -400,6 +400,7 @@ function test15 (info) {
           console.log('test15 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
           expect(oldVal).to.deep.equal({})
           expect(newVal).to.deep.equal({ a: 0 })
+          done()
         },
       }
     })
@@ -409,7 +410,32 @@ function test15 (info) {
       writable: true,
       value: 0,
     })
-    done()
+  })
+}
+
+function test16 (info) {
+  it(info, function (done) {
+    let obj = {}
+    obj = Watcher(obj)
+    watch(obj, {
+      '*': {
+        handler(newVal, oldVal) {
+          console.log('test16 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
+          console.log('test16 this.testVal: ', this.testVal)
+          expect(oldVal).to.deep.equal({})
+          expect(newVal).to.deep.equal({ a: 0 })
+          expect(this.testVal).to.deep.equal(45)
+          done()
+        },
+      }
+    }, this)
+    this.testVal = 45
+    Object.defineProperty(obj, 'a', {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: 0,
+    })
   })
 }
 
@@ -429,4 +455,5 @@ describe('TEST', function () {
   test13('Test unWatch all')
   test14('Test watch sub object')
   test15('Test Object.defineProperty')
+  test16('Test watch items function env')
 })

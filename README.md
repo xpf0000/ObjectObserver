@@ -116,6 +116,7 @@ import { Watcher, watch, unWatch } from "@xpf0000/objectobserver"
 let obj = { a: 0, b: { b0: 1 } }
 obj = Watcher(obj)
 watch(obj, {...})
+watch(obj, {...}, this) // set handler's run env
 ```
 
 #### unWatch
