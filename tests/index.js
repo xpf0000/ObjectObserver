@@ -1,11 +1,11 @@
 import { expect } from 'chai'
-import Watch, { watch, unWatch } from "../src"
+import { Watcher, watch, unWatch } from "../src"
 
 function test1 (info) {
   it(info, function (done) {
     let obj = { a: 0 }
-    obj = Watch(obj)
-    obj[watch](
+    obj = Watcher(obj)
+    watch(obj,
       {
         '*': {
           handler(newVal, oldVal) {
@@ -33,8 +33,8 @@ function test2 (info) {
         b: 0
       }
     }
-    obj = Watch(obj)
-    obj[watch]({
+    obj = Watcher(obj)
+    watch(obj, {
       '*': {
         handler(newVal, oldVal) {
           console.log('test2 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
@@ -90,8 +90,8 @@ function test3 (info) {
         expect(newVal).to.equal(0)
       }
     }
-    obj = Watch(obj)
-    obj[watch](config)
+    obj = Watcher(obj)
+    watch(obj, config)
     obj.b = 0
     done()
   })
@@ -109,8 +109,8 @@ function test4 (info) {
         }
       }
     }
-    obj = Watch(obj)
-    obj[watch](config)
+    obj = Watcher(obj)
+    watch(obj, config)
     obj.push(3)
     done()
   })
@@ -118,7 +118,7 @@ function test4 (info) {
 
 function test5 (info) {
   it(info, function (done) {
-    let obj = Watch({ a: 0 })
+    let obj = Watcher({ a: 0 })
     let config = {
       '*': {
         handler(newVal, oldVal) {
@@ -137,8 +137,8 @@ function test5 (info) {
         }
       }
     }
-    obj[watch](config)
-    obj[watch](config1)
+    watch(obj, config)
+    watch(obj, config1)
     obj.a = 2
     console.log('test5 obj: ', JSON.parse(JSON.stringify(obj)))
     expect(obj).to.deep.equal({ a: 2 })
@@ -148,7 +148,7 @@ function test5 (info) {
 
 function test6 (info) {
   it(info, function (done) {
-    let obj = Watch([])
+    let obj = Watcher([])
     let config = {
       '*': {
         handler(newVal, oldVal) {
@@ -163,10 +163,10 @@ function test6 (info) {
         }
       }
     }
-    let obj1 = Watch(obj)
-    let obj2 = Watch(obj)
-    obj1[watch](config)
-    obj2[watch](config1)
+    let obj1 = Watcher(obj)
+    let obj2 = Watcher(obj)
+    watch(obj1, config)
+    watch(obj2, config1)
     obj.push(0)
     obj1.push(1)
     obj2.push(2)
@@ -180,15 +180,15 @@ function test6 (info) {
 
 function test7 (info) {
   it(info, function (done) {
-    let obj = Watch({ a: { b : 0 } }, 1)
+    let obj = Watcher({ a: { b : 0 } }, 1)
     let config = {
       '*': function (newVal, oldVal) {
         console.log('test7 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
-        expect(oldVal).to.deep.equal({ a: { b: 1 } })
-        expect(newVal).to.deep.equal({ a: { b: 1 }, c: 0 })
+        expect(oldVal).to.deep.equal({ a: {} })
+        expect(newVal).to.deep.equal({ a: {}, c: 0 })
       }
     }
-    obj[watch](config)
+    watch(obj, config)
     obj.a.b = 1
     obj.c = 0
     done()
@@ -197,15 +197,15 @@ function test7 (info) {
 
 function test8 (info) {
   it(info, function (done) {
-    let obj = Watch({ a: { b : 0, c: { d: 0 } } }, 2)
+    let obj = Watcher({ a: { b : 0, c: { d: 0 } } }, 2)
     let config = {
       '*': function (newVal, oldVal) {
         console.log('test8 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
-        expect(oldVal).to.deep.equal({ a: { b : 0, c: { d: 1 } } })
-        expect(newVal).to.deep.equal({ a: { b : 1, c: { d: 1 } } })
+        expect(oldVal).to.deep.equal({ a: { b : 0, c: {} } })
+        expect(newVal).to.deep.equal({ a: { b : 1, c: {} } })
       }
     }
-    obj[watch](config)
+    watch(obj, config)
     obj.a.c.d = 1
     obj.a.b = 1
     done()
@@ -214,7 +214,7 @@ function test8 (info) {
 
 function test9 (info) {
   it(info, function (done) {
-    let obj = Watch({ a: { b : 0, c: { d: 0 } } })
+    let obj = Watcher({ a: { b : 0, c: { d: 0 } } })
     let config = {
       '*': {
         handler(newVal, oldVal) {
@@ -223,7 +223,7 @@ function test9 (info) {
         silence: true
       }
     }
-    obj[watch](config)
+    watch(obj, config)
     obj.a.c.d = 1
     obj.a.b = 1
     done()
@@ -243,7 +243,7 @@ function test10 (info) {
     obj.a.d = obj.a
     console.log('test10 original obj: ', obj)
 
-    obj = Watch(obj)
+    obj = Watcher(obj)
     let config = {
       '*': {
         handler(newVal, oldVal) {
@@ -251,7 +251,7 @@ function test10 (info) {
         },
       }
     }
-    obj[watch](config)
+    watch(obj, config)
     obj.a.b = 1
     done()
   })
@@ -265,7 +265,7 @@ function test11 (info) {
         f: 0
       }
     }
-    obj = Watch(obj)
+    obj = Watcher(obj)
     let config = {
       '*': {
         handler(newVal, oldVal) {
@@ -273,12 +273,14 @@ function test11 (info) {
         },
       }
     }
-    obj[watch](config)
+    watch(obj, config)
     obj.a.b = 1
-    obj[unWatch](config)
-    obj.a.b = 2
-    console.log('test11 finial: ', JSON.parse(JSON.stringify(obj)))
-    done()
+    setTimeout(() => {
+      unWatch(obj, config)
+      obj.a.b = 2
+      console.log('test11 finial: ', JSON.parse(JSON.stringify(obj)))
+      done()
+    }, 300)
   })
 }
 
@@ -290,7 +292,7 @@ function test12 (info) {
         f: 0
       }
     }
-    obj = Watch(obj)
+    obj = Watcher(obj)
     let config = {
       '*': {
         handler(newVal, oldVal) {
@@ -305,13 +307,15 @@ function test12 (info) {
         },
       }
     }
-    obj[watch](config)
-    obj[watch](config1)
+    watch(obj, config)
+    watch(obj, config1)
     obj.a.b = 1
-    obj[unWatch](config)
-    obj.a.b = 2
-    console.log('test12 finial: ', JSON.parse(JSON.stringify(obj)))
-    done()
+    setTimeout(() => {
+      unWatch(obj, config)
+      obj.a.b = 2
+      console.log('test12 finial: ', JSON.parse(JSON.stringify(obj)))
+      done()
+    }, 300)
   })
 }
 
@@ -323,7 +327,7 @@ function test13 (info) {
         f: 0
       }
     }
-    obj = Watch(obj)
+    obj = Watcher(obj)
     let config = {
       '*': {
         handler(newVal, oldVal) {
@@ -338,12 +342,73 @@ function test13 (info) {
         },
       }
     }
-    obj[watch](config)
-    obj[watch](config1)
+    watch(obj, config)
+    watch(obj, config1)
     obj.a.b = 1
-    obj[unWatch]()
-    obj.a.b = 2
-    console.log('test13 finial: ', JSON.parse(JSON.stringify(obj)))
+    setTimeout(() => {
+      unWatch(obj)
+      obj.a.b = 2
+      console.log('test13 finial: ', JSON.parse(JSON.stringify(obj)))
+      done()
+    })
+  })
+}
+
+function test14 (info) {
+  it(info, function (done) {
+    let obj = {
+      a: {
+        b: {}
+      }
+    }
+    obj = Watcher(obj)
+    watch(obj, {
+      '*': {
+        handler(newVal, oldVal) {
+          console.log('test14-watch obj watch *, newVal: ', newVal, ', oldVal: ', oldVal)
+          expect(oldVal).to.deep.equal({ a: { b: {} } })
+          expect(newVal).to.deep.equal({ a: { b: { b0: 0 } } })
+        },
+      }
+    })
+    watch(obj.a, {
+      '*': function (newVal, oldVal) {
+        console.log('test14-watch obj.a watch *, newVal: ', newVal, ', oldVal: ', oldVal)
+        expect(oldVal).to.deep.equal({ b: {} })
+        expect(newVal).to.deep.equal({ b: { b0: 0 } })
+      }
+    })
+    watch(obj.a.b, {
+      '*': function (newVal, oldVal) {
+        console.log('test14-watch obj.a.b watch *, newVal: ', newVal, ', oldVal: ', oldVal)
+        expect(oldVal).to.deep.equal({})
+        expect(newVal).to.deep.equal({ b0: 0 })
+      }
+    })
+    obj.a.b.b0 = 0
+    done()
+  })
+}
+
+function test15 (info) {
+  it(info, function (done) {
+    let obj = {}
+    obj = Watcher(obj)
+    watch(obj, {
+      '*': {
+        handler(newVal, oldVal) {
+          console.log('test15 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
+          expect(oldVal).to.deep.equal({})
+          expect(newVal).to.deep.equal({ a: 0 })
+        },
+      }
+    })
+    Object.defineProperty(obj, 'a', {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: 0,
+    })
     done()
   })
 }
@@ -362,4 +427,6 @@ describe('TEST', function () {
   test11('Test unWatch')
   test12('Test watch more and unWatch some one')
   test13('Test unWatch all')
+  test14('Test watch sub object')
+  test15('Test Object.defineProperty')
 })
