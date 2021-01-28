@@ -30,7 +30,7 @@ export const isEqual = function (a, b) {
       return false
     }
     return keysA.every((k) => {
-      return b.hasOwnProperty(k) && isEqual(a[k], b[k])
+      return b.hasOwnProperty && b.hasOwnProperty(k) && isEqual(a[k], b[k])
     })
   }
   return false
@@ -64,6 +64,10 @@ export const deepClone = (
 const running = new WeakSet()
 function toProxy(obj, depth, currentDepth) {
   return new Proxy(obj, {
+    get(target, p, receiver) {
+      let value = Reflect.get(...arguments)
+      return typeof value == 'function' ? value.bind(target) : value
+    },
     defineProperty(target, key, attributes) {
       if (
         key !== callBackProxy &&
