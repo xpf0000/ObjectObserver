@@ -37,8 +37,7 @@ export const isEqual = function (a, b) {
 }
 const uuid = function (length = 32) {
   let rnd = ''
-  for(let i=0; i<length; i++)
-    rnd += Math.floor(Math.random()*10)
+  for (let i = 0; i < length; i++) rnd += Math.floor(Math.random() * 10)
   return rnd
 }
 export const deepClone = (
@@ -62,6 +61,24 @@ export const deepClone = (
   return target
 }
 const running = new WeakSet()
+const postNotice = (fns, oldV, newV, handle) => {
+  if (!running.has(fns) && !isEqual(oldV, newV)) {
+    running.add(fns)
+    let uid = uuid(8)
+    for (let fn of fns) {
+      fn && fn('before-set', uid)
+    }
+    handle()
+    Promise.resolve().then(() => {
+      for (let fn of fns) {
+        fn && fn('after-set', uid)
+      }
+      running.delete(fns)
+    })
+    return true
+  }
+  return false
+}
 function toProxy(obj, depth, currentDepth) {
   return new Proxy(obj, {
     get(target, p, receiver) {
@@ -83,23 +100,40 @@ function toProxy(obj, depth, currentDepth) {
           attributes.value = toProxy(attributes.value, depth, currentDepth + 1)
           DeepProxy(attributes.value, depth, currentDepth + 1)
         }
-        if (!running.has(obj[callBackProxy]) && !isEqual(target[key], attributes.value)) {
-          running.add(obj[callBackProxy])
-          let uid = uuid(8)
-          for (let fn of obj[callBackProxy]) {
-            fn && fn('before-set', uid)
-          }
-          Reflect.defineProperty(...arguments)
-          Promise.resolve().then(() => {
-            for (let fn of obj[callBackProxy]) {
-              fn && fn('after-set', uid)
-            }
-            running.delete(obj[callBackProxy])
+        if (
+          postNotice(obj[callBackProxy], target[key], attributes.value, () => {
+            Reflect.defineProperty(...arguments)
           })
+        ) {
           return true
         }
       }
       return Reflect.defineProperty(...arguments)
+    },
+    set: function (target, key, value, receiver) {
+      if (
+        key !== callBackProxy &&
+        key !== watchSymbol &&
+        key !== watchConfigsSymbol
+      ) {
+        if (
+          typeof value === 'object' &&
+          (depth === 0 || currentDepth < depth) &&
+          Object.isExtensible(value)
+        ) {
+          value[callBackProxy] = obj[callBackProxy]
+          value = toProxy(value, depth, currentDepth + 1)
+          DeepProxy(value, depth, currentDepth + 1)
+        }
+        if (
+          postNotice(obj[callBackProxy], target[key], value, () => {
+            Reflect.set(target, key, value)
+          })
+        ) {
+          return true
+        }
+      }
+      return Reflect.set(target, key, value)
     },
     deleteProperty(target, key) {
       if (
@@ -107,19 +141,11 @@ function toProxy(obj, depth, currentDepth) {
         key !== watchDepthSymbol &&
         key !== watchConfigsSymbol
       ) {
-        if (!running.has(obj[callBackProxy])) {
-          running.add(obj[callBackProxy])
-          let uid = uuid(8)
-          for (let fn of obj[callBackProxy]) {
-            fn && fn('before-delete', uid)
-          }
-          Reflect.deleteProperty(...arguments)
-          Promise.resolve().then(() => {
-            for (let fn of obj[callBackProxy]) {
-              fn && fn('after-delete', uid)
-            }
-            running.delete(obj[callBackProxy])
+        if (
+          postNotice(obj[callBackProxy], 0, 1, () => {
+            Reflect.deleteProperty(...arguments)
           })
+        ) {
           return true
         }
       }

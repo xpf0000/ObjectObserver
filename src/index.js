@@ -4,7 +4,7 @@ import DeepProxy, {
   isEqual,
   watchConfigsSymbol,
   watchDepthSymbol,
-  watchSymbol
+  watchSymbol,
 } from './DeepProxy.js'
 
 export function Watcher(object, depth = 0) {
@@ -27,7 +27,6 @@ export function watch(obj, config, env) {
       let flag = arguments[0]
       let uid = arguments[1]
       switch (flag) {
-        case 'before-delete':
         case 'before-set':
           oldValue = deepClone(obj, depth)
           config[watchSymbol][uid] = {}
@@ -52,7 +51,6 @@ export function watch(obj, config, env) {
             }
           }
           break
-        case 'after-delete':
         case 'after-set':
           let newValue = deepClone(obj, depth)
           if (!config[watchSymbol][uid]) {

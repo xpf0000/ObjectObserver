@@ -43,6 +43,10 @@ function test1() {
       value: 1,
     })
   }, 300)
+
+  setTimeout(() => {
+   delete obj.a0.a
+  }, 600)
 }
 
 function test2() {
