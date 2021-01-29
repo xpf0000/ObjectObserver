@@ -68,12 +68,12 @@ export function watch(obj, config, env) {
               current = data
             }
             let old = this.dict[uid][k].old
-            if (k === '*' || !isEqual(current, old)) {
+            if (!isEqual(current, old)) {
               let fun =
                 typeof config[k] === 'function'
                   ? config[k]
                   : config[k].handler
-              fun && fun.call(env, current, old)
+              fun && fun.call(env, current, old, obj)
             }
           }
         }

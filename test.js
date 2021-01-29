@@ -224,6 +224,8 @@ function test5() {
 }
 function test6() {
   let a = Watcher({
+    height: 0,
+    width: 0,
     b: {
       height: 0
     },
@@ -233,27 +235,29 @@ function test6() {
   })
 
   let config = {
-    '*': function (n, o) {
-      console.log('a *: ', n, o)
+    '*': function (n, o, obj) {
+      console.log('a *: ', n, o, obj)
     },
-    'height': function (n, o) {
-      console.log('a.b height: ', n, o)
+    'height': function (n, o, obj) {
+      console.log('a.b height: ', n, o, obj)
     },
-    'width': function (n, o) {
-      console.log('a.c width: ', n, o)
+    'width': function (n, o, obj) {
+      console.log('a.c width: ', n, o, obj)
     }
   }
 
   watch(a, config)
   watch(a.b, config)
   watch(a.c, config)
+  a.height = 20
+  a.width = 20
   a.b.height = 10
-  a.c.width = 10
+  // a.c.width = 10
 }
 
-test1()
+// test1()
 // test2()
 // test3()
 // test4()
 // test5()
-// test6()
+test6()
