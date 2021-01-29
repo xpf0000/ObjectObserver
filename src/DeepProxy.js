@@ -68,7 +68,7 @@ const postNotice = (fns, oldV, newV, handle) => {
     for (let fn of fns) {
       fn && fn('before-set', uid)
     }
-    handle()
+    handle(newV)
     Promise.resolve().then(() => {
       for (let fn of fns) {
         fn && fn('after-set', uid)
@@ -79,78 +79,76 @@ const postNotice = (fns, oldV, newV, handle) => {
   }
   return false
 }
-function toProxy(obj, depth, currentDepth) {
+const deleteHandler = (target, key) => {
+  if (
+    key !== callBackProxy &&
+    key !== watchDepthSymbol &&
+    key !== watchConfigsSymbol
+  ) {
+    if (
+      postNotice(target[callBackProxy], 0, 1, () => {
+        Reflect.deleteProperty(target, key)
+      })
+    ) {
+      return true
+    }
+  }
+  return Reflect.deleteProperty(...arguments)
+}
+const setHandler = (target, key, value, handle, depth, currentDepth) => {
+  if (
+    key !== callBackProxy &&
+    key !== watchSymbol &&
+    key !== watchConfigsSymbol
+  ) {
+    if (
+      typeof value === 'object' &&
+      !value[callBackProxy] &&
+      (depth === 0 || currentDepth < depth) &&
+      Object.isExtensible(value)
+    ) {
+      value[callBackProxy] = target[callBackProxy]
+      value = toProxy(value, depth, currentDepth + 1)
+      DeepProxy(value, depth, currentDepth + 1)
+    }
+    if (postNotice(target[callBackProxy], target[key], value, handle)) {
+      return true
+    }
+  }
+  handle(value)
+  return true
+}
+const toProxy = (obj, depth = 0, currentDepth) => {
   return new Proxy(obj, {
-    get(target, p, receiver) {
-      let value = Reflect.get(...arguments)
-      return typeof value == 'function' ? value.bind(target) : value
-    },
     defineProperty(target, key, attributes) {
-      if (
-        key !== callBackProxy &&
-        key !== watchDepthSymbol &&
-        key !== watchConfigsSymbol
-      ) {
-        if (
-          typeof attributes.value === 'object' &&
-          (depth === 0 || currentDepth < depth) &&
-          Object.isExtensible(attributes.value)
-        ) {
-          attributes.value[callBackProxy] = obj[callBackProxy]
-          attributes.value = toProxy(attributes.value, depth, currentDepth + 1)
-          DeepProxy(attributes.value, depth, currentDepth + 1)
-        }
-        if (
-          postNotice(obj[callBackProxy], target[key], attributes.value, () => {
-            Reflect.defineProperty(...arguments)
-          })
-        ) {
-          return true
-        }
+      if (!attributes.hasOwnProperty('value')) {
+        return Reflect.defineProperty(...arguments)
       }
-      return Reflect.defineProperty(...arguments)
+      return setHandler(
+        target,
+        key,
+        attributes.value,
+        (value) => {
+          attributes.value = value
+          Reflect.defineProperty(target, key, attributes)
+        },
+        depth,
+        currentDepth
+      )
     },
     set: function (target, key, value, receiver) {
-      if (
-        key !== callBackProxy &&
-        key !== watchSymbol &&
-        key !== watchConfigsSymbol
-      ) {
-        if (
-          typeof value === 'object' &&
-          (depth === 0 || currentDepth < depth) &&
-          Object.isExtensible(value)
-        ) {
-          value[callBackProxy] = obj[callBackProxy]
-          value = toProxy(value, depth, currentDepth + 1)
-          DeepProxy(value, depth, currentDepth + 1)
-        }
-        if (
-          postNotice(obj[callBackProxy], target[key], value, () => {
-            Reflect.set(target, key, value)
-          })
-        ) {
-          return true
-        }
-      }
-      return Reflect.set(target, key, value)
+      return setHandler(
+        target,
+        key,
+        value,
+        (value) => {
+          Reflect.set(target, key, value)
+        },
+        depth,
+        currentDepth
+      )
     },
-    deleteProperty(target, key) {
-      if (
-        key !== callBackProxy &&
-        key !== watchDepthSymbol &&
-        key !== watchConfigsSymbol
-      ) {
-        if (
-          postNotice(obj[callBackProxy], 0, 1, () => {
-            Reflect.deleteProperty(...arguments)
-          })
-        ) {
-          return true
-        }
-      }
-      return Reflect.deleteProperty(...arguments)
-    },
+    deleteProperty: deleteHandler,
   })
 }
 
@@ -165,14 +163,13 @@ export default function DeepProxy(obj = [], depth = 0, currentDepth = 1) {
   for (let key of Object.keys(obj)) {
     if (
       typeof obj[key] === 'object' &&
+      !obj[key][callBackProxy] &&
       (depth === 0 || currentDepth < depth) &&
       Object.isExtensible(obj[key])
     ) {
-      if (!obj[key][callBackProxy]) {
-        obj[key][callBackProxy] = obj[callBackProxy]
-        obj[key] = toProxy(obj[key], depth, currentDepth + 1)
-        DeepProxy(obj[key], depth, currentDepth + 1)
-      }
+      obj[key][callBackProxy] = obj[callBackProxy]
+      obj[key] = toProxy(obj[key], depth, currentDepth + 1)
+      DeepProxy(obj[key], depth, currentDepth + 1)
     }
   }
   if (currentDepth > 1) {

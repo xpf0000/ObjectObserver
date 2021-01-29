@@ -134,6 +134,7 @@ function test5 (info) {
           console.log('test5-2 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
           expect(oldVal).to.deep.equal({ a: 0 })
           expect(newVal).to.deep.equal({ a: 2 })
+          done()
         }
       }
     }
@@ -142,7 +143,6 @@ function test5 (info) {
     obj.a = 2
     console.log('test5 obj: ', JSON.parse(JSON.stringify(obj)))
     expect(obj).to.deep.equal({ a: 2 })
-    done()
   })
 }
 
@@ -160,6 +160,7 @@ function test6 (info) {
       '*': {
         handler(newVal, oldVal) {
           console.log('test6-2 watch *, newVal: ', newVal, ', oldVal: ', oldVal)
+          done()
         }
       }
     }
@@ -174,7 +175,6 @@ function test6 (info) {
     expect(obj).to.deep.equal([0, 1, 2])
     expect(obj1).to.deep.equal([0, 1, 2])
     expect(obj2).to.deep.equal([0, 1, 2])
-    done()
   })
 }
 
