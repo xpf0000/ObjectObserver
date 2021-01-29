@@ -78,12 +78,23 @@ const postNotice = (fns, oldV, newV, handle) => {
   }
   return false
 }
-const deleteHandler = (target, key) => {
-  if (
+const checkKey = (key) => {
+  return (
     key !== callBackProxy &&
     key !== watchDepthSymbol &&
     key !== watchConfigsSymbol
-  ) {
+  )
+}
+const checkValue = (value, depth, currentDepth) => {
+  return (
+    typeof value === 'object' &&
+    !value[callBackProxy] &&
+    (depth === 0 || currentDepth < depth) &&
+    Object.isExtensible(value)
+  )
+}
+const deleteHandler = (target, key) => {
+  if (checkKey(key)) {
     if (
       postNotice(target[callBackProxy], 0, 1, () => {
         Reflect.deleteProperty(target, key)
@@ -95,16 +106,8 @@ const deleteHandler = (target, key) => {
   return Reflect.deleteProperty(...arguments)
 }
 const setHandler = (target, key, value, handle, depth, currentDepth) => {
-  if (
-    key !== callBackProxy &&
-    key !== watchConfigsSymbol
-  ) {
-    if (
-      typeof value === 'object' &&
-      !value[callBackProxy] &&
-      (depth === 0 || currentDepth < depth) &&
-      Object.isExtensible(value)
-    ) {
+  if (checkKey(key)) {
+    if (checkValue(value, depth, currentDepth)) {
       value[callBackProxy] = target[callBackProxy]
       value = toProxy(value, depth, currentDepth + 1)
       DeepProxy(value, depth, currentDepth + 1)
@@ -159,12 +162,7 @@ export default function DeepProxy(obj = [], depth = 0, currentDepth = 1) {
     }
   }
   for (let key of Object.keys(obj)) {
-    if (
-      typeof obj[key] === 'object' &&
-      !obj[key][callBackProxy] &&
-      (depth === 0 || currentDepth < depth) &&
-      Object.isExtensible(obj[key])
-    ) {
+    if (checkValue(obj[key], depth, currentDepth)) {
       obj[key][callBackProxy] = obj[callBackProxy]
       obj[key] = toProxy(obj[key], depth, currentDepth + 1)
       DeepProxy(obj[key], depth, currentDepth + 1)

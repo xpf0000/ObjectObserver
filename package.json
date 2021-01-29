@@ -1,6 +1,6 @@
 {
   "name": "@xpf0000/objectobserver",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "author": "250881478@qq.com",
   "main": "src/index.js",
   "unpkg": "src/index.js",

@@ -45,7 +45,7 @@ export function watch(obj, config, env) {
           }
         }
       },
-      after(uid){
+      after(uid) {
         let newValue = deepClone(obj, depth)
         if (!this.dict[uid]) {
           return
@@ -70,15 +70,13 @@ export function watch(obj, config, env) {
             let old = this.dict[uid][k].old
             if (!isEqual(current, old)) {
               let fun =
-                typeof config[k] === 'function'
-                  ? config[k]
-                  : config[k].handler
+                typeof config[k] === 'function' ? config[k] : config[k].handler
               fun && fun.call(env, current, old, obj)
             }
           }
         }
         delete this.dict[uid]
-      }
+      },
     }
     obj[watchConfigsSymbol].set(config, cb)
     if (!obj[callBackProxy].includes(cb)) {
