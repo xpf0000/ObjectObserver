@@ -1,6 +1,5 @@
 export const callBackProxy = Symbol('callBackProxy')
 export const watchConfigsSymbol = Symbol('watchConfigsSymbol')
-export const watchSymbol = Symbol('watchSymbol')
 export const watchDepthSymbol = Symbol('watchDepthSymbol')
 
 const isArray = function (obj) {
@@ -66,12 +65,12 @@ const postNotice = (fns, oldV, newV, handle) => {
     running.add(fns)
     let uid = uuid(8)
     for (let fn of fns) {
-      fn && fn('before-set', uid)
+      fn && fn.before && fn.before(uid)
     }
     handle(newV)
     Promise.resolve().then(() => {
       for (let fn of fns) {
-        fn && fn('after-set', uid)
+        fn && fn.after && fn.after(uid)
       }
       running.delete(fns)
     })
@@ -98,7 +97,6 @@ const deleteHandler = (target, key) => {
 const setHandler = (target, key, value, handle, depth, currentDepth) => {
   if (
     key !== callBackProxy &&
-    key !== watchSymbol &&
     key !== watchConfigsSymbol
   ) {
     if (

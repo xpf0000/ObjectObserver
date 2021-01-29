@@ -222,10 +222,38 @@ function test5() {
   obj.num.a = 0
   console.log(obj)
 }
+function test6() {
+  let a = Watcher({
+    b: {
+      height: 0
+    },
+    c: {
+      width: 0
+    }
+  })
+
+  let config = {
+    '*': function (n, o) {
+      console.log('a *: ', n, o)
+    },
+    'height': function (n, o) {
+      console.log('a.b height: ', n, o)
+    },
+    'width': function (n, o) {
+      console.log('a.c width: ', n, o)
+    }
+  }
+
+  watch(a, config)
+  watch(a.b, config)
+  watch(a.c, config)
+  a.b.height = 10
+  a.c.width = 10
+}
 
 test1()
 // test2()
 // test3()
 // test4()
 // test5()
-
+// test6()

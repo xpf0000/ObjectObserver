@@ -4,14 +4,12 @@ import DeepProxy, {
   isEqual,
   watchConfigsSymbol,
   watchDepthSymbol,
-  watchSymbol,
 } from './DeepProxy.js'
 
 export function Watcher(object, depth = 0) {
   object[watchDepthSymbol] = depth
   return DeepProxy(object, depth)
 }
-
 export function watch(obj, config, env) {
   if (!obj.hasOwnProperty(callBackProxy)) {
     obj = Watcher(obj)
@@ -21,23 +19,45 @@ export function watch(obj, config, env) {
     obj[watchConfigsSymbol] = new WeakMap()
   }
   if (!obj[watchConfigsSymbol].has(config)) {
-    config[watchSymbol] = {}
-    let oldValue
-    let cb = function () {
-      let flag = arguments[0]
-      let uid = arguments[1]
-      switch (flag) {
-        case 'before-set':
-          oldValue = deepClone(obj, depth)
-          config[watchSymbol][uid] = {}
-          for (let k in config) {
-            if (k === '*') {
-              config[watchSymbol][uid][k] = {
-                old: oldValue,
+    let cb = {
+      dict: {},
+      before(uid) {
+        let oldValue = deepClone(obj, depth)
+        this.dict[uid] = {}
+        for (let k in config) {
+          if (k === '*') {
+            this.dict[uid][k] = {
+              old: oldValue,
+            }
+          } else {
+            let paths = k.split('.')
+            let data = oldValue
+            for (let p of paths) {
+              if (typeof data != 'object') {
+                data = undefined
+                break
               }
+              data = data[p]
+            }
+            this.dict[uid][k] = {
+              old: data,
+            }
+          }
+        }
+      },
+      after(uid){
+        let newValue = deepClone(obj, depth)
+        if (!this.dict[uid]) {
+          return
+        }
+        if (Object.keys(this.dict[uid]).length > 0) {
+          for (let k in this.dict[uid]) {
+            let current
+            if (k === '*') {
+              current = newValue
             } else {
               let paths = k.split('.')
-              let data = oldValue
+              let data = newValue
               for (let p of paths) {
                 if (typeof data != 'object') {
                   data = undefined
@@ -45,47 +65,19 @@ export function watch(obj, config, env) {
                 }
                 data = data[p]
               }
-              config[watchSymbol][uid][k] = {
-                old: data,
-              }
+              current = data
+            }
+            let old = this.dict[uid][k].old
+            if (k === '*' || !isEqual(current, old)) {
+              let fun =
+                typeof config[k] === 'function'
+                  ? config[k]
+                  : config[k].handler
+              fun && fun.call(env, current, old)
             }
           }
-          break
-        case 'after-set':
-          let newValue = deepClone(obj, depth)
-          if (!config[watchSymbol][uid]) {
-            return
-          }
-          if (Object.keys(config[watchSymbol][uid]).length > 0) {
-            for (let k in config[watchSymbol][uid]) {
-              let current
-              if (k === '*') {
-                current = newValue
-              } else {
-                let paths = k.split('.')
-                let data = newValue
-                for (let p of paths) {
-                  if (typeof data != 'object') {
-                    data = undefined
-                    break
-                  }
-                  data = data[p]
-                }
-                current = data
-              }
-              let old = config[watchSymbol][uid][k].old
-              if (k === '*' || !isEqual(current, old)) {
-                let fun =
-                  typeof config[k] === 'function'
-                    ? config[k]
-                    : config[k].handler
-                fun && fun.call(env, current, old)
-              }
-            }
-          }
-          delete config[watchSymbol][uid]
-          oldValue = null
-          break
+        }
+        delete this.dict[uid]
       }
     }
     obj[watchConfigsSymbol].set(config, cb)
