@@ -236,20 +236,37 @@ function test6() {
 
   let config = {
     '*': function (n, o, obj) {
-      console.log('a *: ', n, o, obj)
+      console.log('a *: ', n, o)
     },
     'height': function (n, o, obj) {
-      console.log('a.b height: ', n, o, obj)
+      console.log('a.b height: ', n, o)
     },
     'width': function (n, o, obj) {
-      console.log('a.c width: ', n, o, obj)
+      console.log('a.c width: ', n, o)
+    }
+  }
+
+  let config1 = {
+    '*': function (n, o, obj) {
+      console.log('config1 a *: ', n, o)
+    },
+    'height': function (n, o, obj) {
+      console.log('config1 a.b height: ', n, o)
+    },
+    'width': function (n, o, obj) {
+      console.log('config1 a.c width: ', n, o)
     }
   }
 
   watch(a, config)
   watch(a.b, config)
   watch(a.c, config)
+
+  let w = watch(a, config1)
+  watch(a.b, config1)
+
   a.height = 20
+  w.unWatch()
   a.width = 20
   a.b.height = 10
   // a.c.width = 10

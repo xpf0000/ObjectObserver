@@ -117,6 +117,8 @@ let obj = { a: 0, b: { b0: 1 } }
 obj = Watcher(obj)
 watch(obj, {...})
 watch(obj, {...}, this) // set handler's run env
+let watcher = watch(obj, {...})
+watch.unWatch() // only clean this watcher
 ```
 
 #### unWatch

@@ -85,6 +85,10 @@ export function watch(obj, config, env) {
       obj[callBackProxy].push(cb)
     }
   }
+  const destroy = () => {
+    unWatch(obj, config)
+  }
+  return { unWatch: destroy }
 }
 
 export function unWatch(obj, config) {
